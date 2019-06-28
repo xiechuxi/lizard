@@ -1,0 +1,68 @@
+* Disk-caching allows use unlimited size of datasets and avoid memory overflow problem
+* Used GPU memory amount control allows using a several trainings on the same GPU
+* Attention to reproducing of trainings allows compare different results
+* Source data augmentation allows training on the tiny-size dataset.
+* KFold cross validation allows training more deeper and obtain better results
+* Parametrized training allows stacking training solutions
+* Structured solutions allows build multi-step training
+* Post-processing of result - smoothly blended probability patches(whole prediction result image not jagged)
+
+
+!
+* Do not use leader-point '.' in solution/project names.
+It uses for image storage folders and optimized to not go through during searching process
+
+!
+* Trick: if need to interrupt fold training, just rename folder of fold.
+
+!
+* About checkpoints(obsolete):
+    weights-ep723-loss0.16280572-val_loss0.16734593-val_mean_iou0.63232585
+better than
+    weights-ep911-loss0.19403782-val_loss0.16330562-val_mean_iou0.64104826
+because although val_loss second one is less than first one, but general loss first one much better than loss of second one.
+
+!
+* To save the training success story(obsolete):
+Step 1.
+Use only sample-images which have positive mask
+Playing with hyperparams shows the best are:
+'dropout_value': 0.5
+'minPositiveRatio': 0.0
+'rotation_range': 45.0
+'shift_range': 0.2
+'shear_range': 1.0
+'zoom_range': 0.3
+'batch_size': 16
+'patience': 500
+
+Playing with optimizers shows:
+* 'nadam' does not required lr and it found good result. It MUCH faster than 'adam'. But it not the best. It useful as first approach to quickly find result.
+His best checkpoint: weights-ep347-loss0.17438043-val_loss0.13822905-val_mean_iou0.67656491.h5 and good results taks about 200 epochs.
+* If play with lr in 'adam' it could(but not must) provide better than 'nadam'
+Absolute winner - adam_1e-3_do05_posRatio0_batch16/45_02_1_03/fold_3
+weights-ep944-loss0.13095350-val_loss0.14417860-val_mean_iou0.69644366.h5
+weights-ep984-loss0.14538731-val_loss0.14276544-val_mean_iou0.69917251.h5
+Another LR's results:
+adam_1e-4_do05_posRatio0_batch16 -> weights-ep2179-loss0.18264040-val_loss0.17159381-val_mean_iou0.65214292.h5
+adam_1e-2_do05_posRatio0_batch16 -> weights-ep451-loss0.19355203-val_loss0.15525285-val_mean_iou0.61292751.h5
+
+Step 2.
+Started from the best checkpoint of Step 1.
+Use all sample images
+Hyperparameters:
+'minPositiveRatio': -1.0
+'patience': 500
+'rotation_range': 45.0
+'shift_range': 0.2
+'shear_range': 1.0
+'zoom_range': 0.3
+* nadam_do02_posRatio-1_batch32 ->
+  weights-ep2915-loss0.02579356-val_loss0.02065128-val_mean_iou0.78533850.h5
+  weights-ep3217-loss0.02920925-val_loss0.01997713-val_mean_iou0.79009330.h5
+  Iterations number(!)
+* nadam_do05_posRatio-1_batch64 ->
+  weights-ep2249-loss0.04904532-val_loss0.03534932-val_mean_iou0.69565270.h5
+* adam_1e-3_do05_posRatio-1_batch64 ->
+  weights-ep054-loss0.05143848-val_loss0.05852547-val_mean_iou0.68339813
+Best: 'nadam' optimizer with dropOut 0.2 and batch 32
